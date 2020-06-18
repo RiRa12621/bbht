@@ -1,29 +1,51 @@
 #!/bin/bash
-sudo apt-get -y update
-sudo apt-get -y upgrade
 
 
-sudo apt-get install -y libcurl4-openssl-dev
-sudo apt-get install -y libssl-dev
-sudo apt-get install -y jq
-sudo apt-get install -y ruby-full
-sudo apt-get install -y libcurl4-openssl-dev libxml2 libxml2-dev libxslt1-dev ruby-dev build-essential libgmp-dev zlib1g-dev
-sudo apt-get install -y build-essential libssl-dev libffi-dev python-dev
-sudo apt-get install -y python-setuptools
-sudo apt-get install -y libldns-dev
-sudo apt-get install -y python3-pip
-sudo apt-get install -y python-pip
-sudo apt-get install -y python-dnspython
-sudo apt-get install -y git
-sudo apt-get install -y rename
-sudo apt-get install -y xargs
+# Break if something goes wrong
+set -e
+
+# Some steps if running in a container:
+# 1. Don't use sudo when running in a container
+if [ -f /.dockerenv ]; then
+	as_root=""
+	echo "Running in a container, not using sudo"
+else
+	as_root="sudo"
+	echo "Running on host OS, using $as_root"
+fi
+
+$as_root apt-get -y update
+$as_root apt-get -y upgrade
+
+
+$as_root apt-get install -y libcurl4-openssl-dev
+$as_root apt-get install -y libssl-dev
+$as_root apt-get install -y jq
+$as_root apt-get install -y ruby-full
+$as_root apt-get install -y libcurl4-openssl-dev libxml2 libxml2-dev libxslt1-dev ruby-dev build-essential libgmp-dev zlib1g-dev
+$as_root apt-get install -y build-essential libssl-dev libffi-dev python-dev
+$as_root apt-get install -y python-setuptools
+$as_root apt-get install -y libldns-dev
+$as_root apt-get install -y python3-pip
+$as_root apt-get install -y python-pip
+$as_root apt-get install -y python-dnspython
+$as_root apt-get install -y git
+$as_root apt-get install -y rename
+$as_root apt-get install -y findutils
 
 echo "installing bash_profile aliases from recon_profile"
 git clone https://github.com/nahamsec/recon_profile.git
 cd recon_profile
-cat bash_profile >> ~/.bash_profile
+cat .bash_profile >> ~/.bash_profile
 source ~/.bash_profile
-cd ~/tools/
+# Create the tools directory if it does not exist
+if [ -d "~/tools" ]; then
+	`cd ~/tools/`;
+else
+	`mkdir ~/tools`;
+	`cd ~/tools`;
+fi
+
 echo "done"
 
 
@@ -39,8 +61,8 @@ select choice in "${choices[@]}"; do
 
 					echo "Installing Golang"
 					wget https://dl.google.com/go/go1.13.4.linux-amd64.tar.gz
-					sudo tar -xvf go1.13.4.linux-amd64.tar.gz
-					sudo mv go /usr/local
+					$as_root tar -xvf go1.13.4.linux-amd64.tar.gz
+					$as_root mv go /usr/local
 					export GOROOT=/usr/local/go
 					export GOPATH=$HOME/go
 					export PATH=$GOPATH/bin:$GOROOT/bin:$PATH
@@ -66,10 +88,7 @@ echo "Don't forget to set up AWS credentials!"
 apt install -y awscli
 echo "Don't forget to set up AWS credentials!"
 
-
-
-#create a tools folder in ~/
-mkdir ~/tools
+#Go back into tools folder
 cd ~/tools/
 
 #install aquatone
@@ -79,13 +98,16 @@ echo "done"
 
 #install chromium
 echo "Installing Chromium"
-sudo snap install chromium
+# Explicitly install chromium dependencies because we're installing it from debian mirrors
+# This is probably not needed on actual debian hosts.
+$as_root apt-get install -y chromium-browser chromium-browser-l10n chromium-codecs-ffmpeg 
+#$as_root apt-get install -y chromium
 echo "done"
 
 echo "installing JSParser"
 git clone https://github.com/nahamsec/JSParser.git
 cd JSParser*
-sudo python setup.py install
+$as_root python setup.py install
 cd ~/tools/
 echo "done"
 
@@ -106,7 +128,7 @@ echo "done"
 echo "installing wpscan"
 git clone https://github.com/wpscanteam/wpscan.git
 cd wpscan*
-sudo gem install bundler && bundle install --without test
+$as_root gem install bundler && bundle install --without test
 cd ~/tools/
 echo "done"
 
@@ -143,7 +165,7 @@ cd ~/tools/
 echo "done"
 
 echo "installing nmap"
-sudo apt-get install -y nmap
+$as_root apt-get install -y nmap
 echo "done"
 
 echo "installing massdns"
